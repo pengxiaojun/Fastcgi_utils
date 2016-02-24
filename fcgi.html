@@ -1,0 +1,67 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
+<head>
+	<meta http-equiv="Content-Type" content="text/html;charset=UTF-8">
+	<title>FastCGI With Ajax Test</title>
+	<script type="text/javascript" src="js/jquery-1.11.3.min.js"></script>
+	<style>
+	</style>
+    	<script type="text/javascript">
+		function do_get()
+		{
+			$.ajax({
+				url: "webadmin.fcgi?target=nvr&action=listuser",
+				type: "get",
+				success: function(data){
+					alert(data);
+				}
+			});
+		}
+		function ajax_post()
+		{
+			var accounts = [
+				{"name" : "steven", "age" : 20},
+				{"name" : "bob", "age" : 30}
+			];
+
+			var data = {
+				"retcode" : 0,
+				"target" : "nvr",
+				"accounts" : accounts
+			};
+			var datastr = JSON.stringify(data);
+
+			$.ajax({
+				url: "webadmin.fcgi",
+				dataType: "json",
+				type: "post",
+				data : datastr,
+				success: function(data){
+					alert(data);
+				}
+			});
+		}
+       	</script>
+</head>
+<body>
+	<div>
+		<p>Get</p>
+		<input type="button" id="btnget" value="get" onclick="do_get()">
+		<div id="divget"></div>
+	</div>
+	<div>
+		<form method="post" action="webadmin.fcgi?action=login">
+		<p>Post</p>
+		<input type="hidden" name="target" value="nvr"/></p>
+		<p><label>User:</label><input type="text" name="user"/></p>
+		<p><label>Pass:</label><input type="password" name="password"/></p>
+		<input type="submit" value="login"/>
+		<div id="divpost"></div>
+		</form>
+	</div>
+	<div>
+		<p>Ajax Post</p>
+		<input type="button" value="ajax post" onclick="ajax_post()"/>
+	</div>
+</body>
+</html>

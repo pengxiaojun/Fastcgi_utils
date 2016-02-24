@@ -1,0 +1,1048 @@
+package TvWall;
+
+message Rect
+{
+    required int32 x = 1;
+    required int32 y = 2;
+    required int32 w = 3;
+    required int32 h = 4;
+}
+
+message Point
+{
+    required int32 x = 1;
+    required int32 y = 2;
+}
+
+message Guid
+{
+    required bytes data = 1;
+}
+
+message NetInterface
+{
+    required string ifname =1;
+    required string ip = 2;
+    required string netmask = 3;
+    optional bool enabled = 4;
+    optional bool plug = 5;
+    optional int32 speed = 6 [default=1000];
+    optional bool dhcp = 7 [default=false];
+}
+
+message Network
+{
+    required string hostName = 1;  //serverName  the same
+    optional string gateway = 2;
+    optional string gateway6 = 3;
+    optional string gwdev = 4;
+    optional string nat = 5;
+    optional string dns = 6;
+    repeated NetInterface interfaces= 7;
+}
+
+message NVR
+{
+    required string ip = 1;
+    required string userName = 2;
+    required string password = 3;
+    optional bool connected = 4;
+}
+message FMP
+{
+    required string ip = 1;
+    required string userName = 2;
+    required string password = 3;
+}
+
+message Packet{
+    message Session{
+        message Login
+        {
+            required string version = 1 [default="v1.0.0"];
+            optional string userName = 2;
+            optional string passwd = 3;
+            optional string encryption = 4 [default="md5"];
+            optional int32 token = 5; // for master
+            optional bool isMaster = 6;
+        }
+
+        message LoginAck
+        {
+            required string version = 1 [default="v1.0.0"];
+            required int32 result = 2;
+            optional int32 sessionId = 3;
+        }
+
+        message LoginMasterAck
+        {
+            required  LoginAck loginAck = 1;
+            required int32 token = 2;
+            message Server
+            {
+                required string peer = 1;
+                optional Login login = 3;
+                optional string serverName = 4;
+            }
+            repeated Server ser = 3;
+            required ElementMaster.MasterLayout lyout = 4;
+        }
+
+        enum LogoutReasonType
+        {
+            USER_LOGOUT = 0; // the reason
+        }
+
+        message Logout
+        {
+            required LogoutReasonType reason = 1;
+        }
+
+        message LogoutAck
+        {
+        }
+        message Ping
+        {
+            required int32 num =1;
+        }
+        message PingAck
+        {
+            required int32 num=2;
+        }
+
+        optional Login login = 1;
+        optional LoginAck loginAck = 2;
+        optional LoginMasterAck loginMstAck = 3;
+        optional Logout logout = 4;
+        optional LogoutAck logoutAck = 5;
+        optional Ping  ping = 6;
+        optional PingAck pingAck = 7;
+    }
+
+    message ElementDat  //the object belong to server
+    {
+        message Screen
+        {
+            required Rect geometry = 1;
+            optional int32 screenIndex = 2;
+            required int32 row = 3;
+            required int32 col = 4;
+        }
+
+        message Camera
+        {
+            required Guid cameraId = 1;
+            message CameraInfo
+            {
+                required string cameraIP = 1;
+                required int32 cameraPort = 2;
+                optional string cameraName = 3;
+                optional int32 width = 4;
+                optional int32 height = 5;
+                optional bool canPtz = 6;
+                optional bool composite = 7 [default=false];
+                optional uint32 model = 8;
+            }
+            required CameraInfo cameraInfo = 2;
+	    message RecordInfo
+	    {
+		required uint64 begin = 1;
+		//uint64 end = 2;
+	    }	
+	    optional RecordInfo recordInfo = 3;
+            optional bool isPlaying = 4 [default=false];
+            optional bool isConnected = 5 [default=false];
+            optional bool isDel = 6 [default=false];
+            optional bool isPlayBack = 7 [default=false];
+            optional Guid parentId = 8;
+        }
+
+        message CameraGrp
+        {
+            required string grpName = 1;
+            repeated Camera cam = 2;
+            repeated CameraGrp camGrp = 3;
+            required Guid grpId = 4;
+            optional bool isDel = 5 [default=false];
+            optional Guid parentId = 6;
+        }
+
+        message LocalMovie
+        {
+            required string fileName = 1; // == url,,
+        }
+
+        message Flash
+        {
+            required string url = 1;
+        }
+
+        message View
+        {
+            enum ViewType
+            {
+                VIDEO = 0;
+                FLASH = 1;
+                HTML = 2;
+                TEXT = 3;
+                LOCAL_MOVIE = 4;
+                MAP = 5;
+                OTHERS = 6;
+                RECORDFILE = 7;
+                ALARM = 8;
+            }
+
+            required int32 winId = 1;
+
+            required Rect rect = 2;
+
+            required ViewType viewType = 3;
+
+            optional string url = 4;    //for Flash html text local_movie map
+            repeated Guid cameraId = 5; //for video
+            optional uint64 startTime = 6; //for record replay..
+
+            optional bool keepStretch = 7; //for video and recodfile
+            optional int32 borderWidth = 8;
+            optional bool showTitle = 9;
+            optional string title = 10;
+            optional int32 pollInterval = 11; //for video
+            optional int32 gpuId = 12;
+            optional bool showFullScreen = 13;
+            optional int32 windowStack = 14;
+            optional bool isAlarm = 15;
+            optional int32 alarmInterval = 16;
+            optional bool showMaxFullScreen = 17;
+            optional bool showMinFullScreen = 18;
+            optional Rect  fullscreenRect = 19;  //for virtual server
+        }
+
+        message FocusPoint
+        {
+        }
+
+        message HotPoint
+        {
+            required Rect geometry = 1;
+            required int32 screenIndex = 3;
+            required bool limitedMap = 4;
+            required bool limitedRecord = 5;
+        }
+
+        message ServerLayout
+        {
+            required string name = 1;
+            required ElementDat layoutDat = 2;  //include view, hotpoint,,
+        }
+        message ServerLayoutLoop
+        {
+            required string name = 1;
+            required uint32 pollInterval = 2;
+            repeated string layoutName = 3;
+        }
+        message Map
+        {
+            required string mapUrl = 1;  //map name
+            repeated Map map = 2;
+        }
+        message GroupLoop
+        {
+            repeated View views= 1;
+           // required View focusAreaView = 2;  //this focusAreaView is already in views array
+            required uint32 pollInterval = 2;
+            optional bool isOn = 3;
+        }
+        repeated Screen screen = 1;
+        repeated View view = 2;
+        repeated CameraGrp camGrp = 3;
+        optional HotPoint hotPoint = 4;
+        repeated LocalMovie localMovie = 5;
+        repeated Flash flash= 6;
+
+        required string serverName = 7;
+
+        repeated ServerLayout servLayout = 8;
+        optional Guid guid = 9;
+        repeated Map map = 10;
+        optional string currentLayout = 11;
+        repeated ServerLayoutLoop servLayoutLoop = 12;
+        optional string currentLayoutLoop = 13;
+        repeated NVR nvrLst = 14;
+        optional GroupLoop groupLoop = 15;
+        optional uint32 maxPlaybackRate = 16;
+        optional FMP fmp = 17;
+        optional int32 tvwallindex = 18;
+        optional string anoleVersion = 19;
+        optional string SN = 20;
+    }
+
+    message ElementMaster  //the object belong to Master
+    {
+        required int32 token = 1;
+
+        repeated Session.LoginMasterAck.Server ser = 2;
+
+        message MasterLayout
+        {
+            message ServerPos
+            {
+                optional string serverName = 1;
+                required Guid guid = 2;
+                required Point point = 3;
+            }
+            message MasLayout
+            {
+                required string lyoutName = 1;
+                repeated ServerPos sp = 2;
+                repeated string serverln = 3;
+            }
+            repeated MasLayout masterLayout = 1;
+        }
+        required MasterLayout masterlyout = 3;
+    }
+
+    message Ctrl{
+        message ScreenSplitCtrl
+        {
+                required int32 screenIndex = 2;
+                required int32 row = 3[default=1];
+                required int32 col = 4[default=1];
+
+        }
+        message ViewCtrl{
+
+            message ViewGeomotryCtrl
+            {
+                enum ViewGeomotryCtrlType
+                {
+                    CREATE = 0;
+                    WINDOW_CTRL = 1;  //move and resize,,and so on,,
+                    REMOVE = 2;
+
+                    SET_BORDER_WIDTH = 3;
+                    SHOW_TITLE = 4;
+                }
+
+                required ViewGeomotryCtrlType type = 1;
+
+                required ElementDat.View view = 2;
+
+            }
+
+            message VideoCtrl
+            {
+                enum VideoCtrlType
+                {
+                    CAMERA_ADD = 0;
+                    CAMERA_REMOVE = 1;
+                    POLL_INTERVAL = 2;
+                    KEEP_STRETCH = 3;
+                }
+
+                required VideoCtrlType type = 1;
+                required int32 winId = 2;       //point out which View the camera will be add
+                repeated Guid cameraId = 3;    //add or remove more than one camera,,but we use one
+                optional int32 pollInterval = 4;
+                optional bool keepStretch = 5;
+            }
+
+	   message RecordCtrl
+	   {
+		enum RecordCtrlType
+		{
+                        RESET_START_TIME = 0;
+                        KEEP_STRETCH     = 1;
+                        SET_RATE         = 2;
+
+                        PAUSE = 3;
+                        SLOW = 4;
+                        FAST = 5;
+                        BACK = 6;
+                        FORWARD = 7;
+		}
+		required RecordCtrlType type = 1;
+		required int32 winId = 2;
+		required Guid cameraId = 3;
+		optional uint64 startTime = 4;
+                optional bool keepStretch = 5;
+                optional int32 rate = 6;
+	    }
+
+            message FlashCtrl
+            {
+                enum FlashCtrlType
+                {
+                    SET_FLASH = 0;
+                }
+                required FlashCtrlType type = 1;
+                required int32 winId = 2;
+                required string url = 3;
+
+            }
+
+            message HTMLCtrl
+            {
+                enum HTMLCtrlType
+                {
+                    SET_HTML = 0;
+                }
+                required HTMLCtrlType type = 1;
+                required int32 winId = 2;
+                required string url = 3;
+            }
+
+            message LocalMovieCtrl
+            {
+                enum LocalMovieType
+                {
+                    SET_FILE = 0;
+                    SET_VOLUME = 1;
+                    SET_SLIDER = 2;
+                    PAUSE = 3;
+                    STOP = 4;
+                }
+                required LocalMovieType type = 1;
+                required int32 winId = 2;
+                optional string url = 3;
+                optional int32 volume = 4;    // for SET_VOLUME
+                optional int64 timeStamp = 5; // for SET_SLIDER
+            }
+
+            message TextCtrl
+            {
+                enum TextCtrlType
+                {
+                    SET_TEXT = 0;
+                }
+                required TextCtrlType type = 1;
+                required int32 winId = 2;
+                optional string text = 3;
+            }
+
+            message MapCtrl
+            {
+                enum MapCtrlType
+                {
+                    SET_MAP = 0;
+                }
+                required MapCtrlType type = 1;
+                required int32 winId = 2;
+                optional string url = 3;
+            }
+
+
+            message OthersCtrl
+            {
+                enum OthersCtrlType
+                {
+                    OTHER_ADD = 0;
+                }
+                required OthersCtrlType type = 1;
+                required int32 winId = 2;
+            }
+
+            optional VideoCtrl videoCtrl = 1;
+            optional FlashCtrl flashCtrl = 2;
+            optional HTMLCtrl htmlCtrl = 3;
+            optional TextCtrl textCtrl = 4;
+            optional OthersCtrl othersCtrl = 5;
+            optional LocalMovieCtrl localMovie = 6;
+            optional ViewGeomotryCtrl viewGeomotryCtrl = 7;
+            optional MapCtrl mapCtrl = 8;
+	    optional RecordCtrl recordCtrl = 9;
+
+        }
+
+        message CameraCtrl
+        {
+            enum PTZ_TYPE
+            {
+                LEFT = 0;
+                RIGHT = 1;
+                UP = 2;
+                DOWN = 3;
+            }
+
+            required PTZ_TYPE type = 1;
+            required Guid cameraId = 2;
+        }
+	
+	
+
+        message HotPointCtrl
+        {
+            enum HotPointCtrlType
+            {
+                CREATE = 0;
+                REMOVE = 1;
+                RESET = 2;
+                RESET_SCREEN = 3;
+
+            }
+
+            required HotPointCtrlType type = 1;
+            optional ElementDat.HotPoint hotPoint = 2;
+
+        }
+        message LayoutCtrl
+        {
+            enum LayoutCtrlType
+            {
+                SAVE_CURRENT = 0;
+                DEL = 0x1;
+                USE = 0x2;
+            }
+            required string lyoutName = 1;     //be careful,,,string bytes can't be the ,,,
+            required LayoutCtrlType type =3;
+            optional bool isalarm = 2;
+            optional int32 alarmInterval = 4;
+        }
+        message LayoutLoopCtrl
+        {
+            enum LayoutLoopCtrlType
+            {
+
+                ADD = 0;
+                REMOVE = 1;
+                ADD_LAYOUT = 2;
+                USE = 3;
+                SET_LOOP = 4;
+                STOP = 5;
+            }
+            required string lyoutLoopName = 1;
+            required LayoutLoopCtrlType type = 2;
+            repeated string layoutName = 3;
+            optional uint32 loop = 4;
+        }
+        message CtrlMaster
+        {
+            message CtrlMasterLyout
+            {
+                enum CMLType
+                {
+                    SAVE = 0;
+                    DEL = 1;
+                }
+                required CMLType type = 1;
+                required ElementMaster.MasterLayout.MasLayout masterLayout = 2;
+            }
+            optional CtrlMasterLyout ctrlLyout = 1;
+        }
+        message MachineCtrl
+        {
+            enum MachineCtrlType
+            {
+                REBOOT = 0;
+                SOFT_REBOOT = 1;
+                SET_SCREEN = 2;
+                POWEROFF = 3;
+                NET_HOST = 4;
+                NET_GATEWAY = 5;
+                NET_INTERFACE = 6;
+                NVR_ADD = 7;
+                NVR_DEL = 8;
+                FMP = 9;
+                TVWALL_INDEX=10;
+            }
+            required MachineCtrlType type = 1;
+            optional string screenMode = 2;
+            optional NetInterface netInterface = 3;
+            optional Network network = 4;
+            optional NVR nvr = 5;
+            optional FMP fmp = 6;
+            optional int32 tvwallindex=7;
+        }
+        message KeyCtrl
+        {
+            enum KeyType
+            {
+               KeyPress = 0;
+               KeyRelease = 1;
+               ShortcutOverride = 2;
+            }
+            required KeyType type = 1;
+            required int32 key = 2;
+            required int32 modifiers = 3;
+            optional string text = 4;
+            optional bool autoRepeat = 5;
+            optional int32 count = 6;
+        }
+        message KeyCmdCtrl
+        {
+            enum KeyCmdType
+            {
+                Media = 0;
+                Ptz   = 1;
+                Preset = 2;
+                tour  = 3;
+            }
+            enum KeyType
+            {
+                KeyPress = 0;
+                KeyRelease = 1;
+            }
+            optional KeyCmdType type = 1;
+            optional int32 screenIdx = 2;
+            optional int32 camPosIdx = 3;
+            optional int32 key = 4;
+            optional KeyType keyType = 5;
+            optional string text = 6;
+            optional string cam_guid = 7;
+        }
+        message AlarmCtrl
+        {
+            required string alarmSource = 1;
+            required bool alarmClear  = 2;
+        }
+        message SyncClockCtrl
+        {
+            enum SyncType
+            {
+                SyncClock = 0;
+                SyncFirstCam = 1;    //sync the cam loop to first
+            }
+            optional int32 clock = 1;  // useless
+            optional SyncType type = 2;
+        }
+        message TextContextCtrl
+        {
+            enum TextContextType
+            {
+                TextChanged = 0;
+            }
+            required TextContextType type = 1;
+            required string oldText = 2;
+            required string newText = 3;
+        }
+        message GroupLoopCtrl
+        {
+            enum GroupLoopCtrlType
+            {
+                ALL = 0;
+                FOCUS_AREA = 0x01;
+                RESET_VIEWS = 0x02;
+                LOOP_TIME = 0x04;
+                ACTIVED = 0x08;
+            }
+            required GroupLoopCtrlType type = 1;
+            required ElementDat.GroupLoop groupLoop = 2;
+        }
+
+        optional ViewCtrl viewCtrl = 1;
+        optional CameraCtrl cameraCtrl = 2;
+        optional HotPointCtrl hotPointCtrl = 3;
+        optional LayoutCtrl lyoutCtrl = 4;
+
+        optional CtrlMaster masterCtrl = 5;
+        optional ScreenSplitCtrl screenCtrl = 6;
+
+        optional LayoutLoopCtrl lyoutLoopCtrl = 7;
+        optional MachineCtrl machineCtrl = 8;
+        optional KeyCtrl keyCtrl = 9;
+        optional KeyCmdCtrl keyCmdCtrl = 10;
+        optional AlarmCtrl alarmCtrl = 11;
+        optional SyncClockCtrl syncCtrl = 12;
+        optional TextContextCtrl txtContextCtrl = 13;
+        optional GroupLoopCtrl groupLoopCtrl = 14;
+    }
+
+    message RequireSession
+    {
+        enum ClientRequireType
+        {
+            SCREEN = 0x01;
+            VIEW = 0x02;
+            CAMERA = 0x04;
+            HOT_POINT = 0x08;
+            FOCUS_POINT = 0x10;
+            LOCAL_MOVIE = 0x20;
+            FLASH = 0x40;
+            LAYOUT = 0x80;
+            RECORDINFO = 0x100;
+            MAPINFO = 0x200;
+            LAYOUTLOOP = 0x400;
+            NVR_LIST = 0x800;
+            FMP = 0x1000;
+            ALL = 0xffff;
+        }
+        message ClientRequire
+        {
+            required ClientRequireType type = 1;
+        }
+
+        message ClientRequireAck
+        {
+            required ClientRequireType type = 1;
+            required ElementDat elementData = 2;
+        }
+
+        message LocalMovieSession               //client require LocalMovie current info,
+        {
+            required int32 winId = 1;
+            required bool needAlwaysAck = 2;    //if true,server will always send the localMovie info
+                                                //if false,server will stop send LocalMovieSessionAck
+        }
+
+        message LocalMovieSessionAck            //only one Ack will be sended if client Set needAlwaysAck true for more than one View,,
+        {                                       //one client --one needAlwaysAck
+            enum MovieStat
+            {
+                STOP = 0;
+                PLAY = 1;
+                PAUSE = 2;
+            }
+
+            required int32 winId = 1;
+            optional string url = 2;
+            optional int32 volume = 3;
+            optional int64 timeStamp = 4;       //slider ,,,the name timeStamp is uncorrect,,
+            required MovieStat movieStat = 5;
+        }
+
+        message RecordRequire
+        {
+            enum RecordRequireType
+            {
+                CURRENT_TIME = 0;
+            }
+            required RecordRequireType type = 1;
+            required int32 winId = 2;
+            required Guid CameraId = 3;
+
+        }
+
+        message RecordRequireAck
+        {
+            required int32 winId = 1;
+            required Guid CameraId = 2;
+            optional uint64 currentTime = 3;
+	    optional int32 vary = 4;
+	    optional bool isPause = 5;
+        }
+        message NetRequire
+        {
+
+        }
+
+        message NetRequireAck
+        {
+            optional Network net = 1;
+        }
+
+        optional ClientRequire clientRequire = 1;
+        optional ClientRequireAck clientRequireAck = 2;
+        optional LocalMovieSession lms = 3;
+        optional LocalMovieSessionAck lmsAck = 4;
+        optional RecordRequire recordRequire = 5;
+        optional RecordRequireAck recordRequireAck = 6;
+        optional NetRequire netRequire = 7;
+        optional NetRequireAck netRequireAck = 8;
+    }
+
+    message Notice /// when the server sth change,like screens,,or client ask it change its view,camera,hotPoint,,
+    {
+        message Stat{
+            message ScreenSpliStat
+            {
+                    required int32 screenIndex = 2;
+                    required int32 row = 3;
+                    required int32 col = 4;
+            }
+
+            message ViewStat{
+
+                message ViewGeomotryStat
+                {
+                    enum ViewGeomotryStatType
+                    {
+                        CREATE = 0;
+                        WINDOW_CTRL = 1;  //move and resize,,and so on,,
+                        REMOVE = 2;
+
+                        SET_BORDER_WIDTH = 3;
+                        SHOW_TITLE = 4;
+                    }
+
+                    required ViewGeomotryStatType type = 1;
+
+                    required ElementDat.View view = 2;
+
+                    optional string url = 3;
+                }
+
+                message VideoStat
+                {
+                    enum VideoStatType
+                    {
+                        CAMERA_ADD = 0;
+                        CAMERA_REMOVE = 1;
+                        POLL_INTERVAL = 2;
+                        KEEP_STRETCH = 3;
+                    }
+
+                    required VideoStatType type = 1;
+                    required int32 winId = 2;       //point out which View the camera will be add
+                    repeated Guid cameraId = 3;    //add or remove more than one camera,,
+                    optional int32 pollInterval = 4;
+                    optional bool keepStretch = 5;
+                    repeated Guid cameraIddy = 6; //the modify cams
+                }
+
+ 		message RecordStat   //actually unused,,,
+                {
+			enum RecordStatType
+			{
+                            RESET_START_TIME = 0;
+                            KEEP_STRETCH = 1;
+                            SET_RATE = 2;
+                            PAUSE = 3;
+                            SLOW = 4;
+                            FAST = 5;
+                            BACK = 6;
+                            FORWARD = 7;
+			}
+			required RecordStatType type = 1;
+			required int32 winId = 2;
+			required Guid cameraId = 3;
+			optional uint64 startTime = 4;
+                        optional bool keepStretch = 5;
+                        optional int32 rate = 6;
+	    	}
+
+                message LocalMovieStat
+                {
+                    enum LocalMovieType
+                    {
+                        SET_FILE = 0;
+                        SET_VOLUME = 1;
+                        SET_SLIDER = 2;
+                        PAUSE = 3;
+                        STOP = 4;
+                    }
+                    required LocalMovieType type = 1;
+                    required int32 winId = 2;
+                    optional string url = 3;
+                    optional int32 volume = 4;    // for SET_VOLUME
+                    optional int64 timeStamp = 5; // for SET_SLIDER
+                }
+
+                message FlashStat
+                {
+                    enum FlashStatType
+                    {
+                        SET_FLASH = 0;
+                    }
+                    required FlashStatType type = 1;
+                    required int32 winId = 2;
+
+                    required string url = 3;
+                }
+
+                message HTMLStat
+                {
+                    enum HTMLStatType
+                    {
+                        SET_HTML = 0;
+                    }
+                    required HTMLStatType type = 1;
+                    required int32 winId = 2;
+
+                    required string url = 3;
+                }
+
+                message TextStat
+                {
+                    enum TextStatType
+                    {
+                        SET_TEXT = 0;
+                    }
+                    required TextStatType type = 1;
+                    required int32 winId = 2;
+                    optional string text = 3;
+                }
+
+                message MapStat
+                {
+                    enum MapCtrlType
+                    {
+                        SET_MAP = 0;
+                    }
+                    required MapCtrlType type = 1;
+                    required int32 winId = 2;
+                    optional string url = 3;
+                }
+
+                message OthersStat
+                {
+                    enum OthersStatType
+                    {
+                        OTHER_ADD = 0;
+                        SERVER_NAME = 1;
+                    }
+                    required OthersStatType type = 1;
+                    required int32 winId = 2;
+                    optional string serName = 3;
+                }
+
+                optional VideoStat videoStat = 1;
+                optional FlashStat flashStat = 2;
+                optional HTMLStat htmlStat = 3;
+                optional TextStat textStat = 4;
+                optional OthersStat othersStat = 5;
+                optional LocalMovieStat localMovieStat = 6;
+                optional ViewGeomotryStat viewGeomotryStat = 7;
+                optional RecordStat recordStat = 8;
+                optional MapStat  mapStat = 9;
+
+            }
+
+            message CameraStat
+            {
+                enum PTZ_TYPE
+                {
+                    LEFT = 0;
+                    RIGHT = 1;
+                    UP = 2;
+                    DOWN = 3;
+                    ////.....and so on
+                    ADD_CAMERA = 4;               //DONT USE, replaced by  "UPDATE ADD  REMOVE"
+                    REMOVE_CAMERA = 5;           //DONT USE, replaced by  "UPDATE ADD  REMOVE"
+
+                    NETSTAT = 6;
+                    PLAYING_STAT = 7;
+                    PLAYBACK_STAT=8;
+                    UPDATE = 9;
+                    ADD = 10;
+                    REMOVE = 11;
+
+                    ADD_GRP = 12;
+                    REMOVE_GRP = 13;
+                    UPDATE_GRP=14;
+                }
+
+                required PTZ_TYPE type = 1;
+                optional Guid cameraId = 2; // use for ptzf,,,
+                repeated ElementDat.CameraGrp camGrp = 3; //no more use
+                optional ElementDat.Camera cam = 4;  //just for NETSTAT or  PLAYINGSTAT UPDATE  ADD  REMOVE cam
+                optional ElementDat.CameraGrp grp = 5; //just for ADD_GRP,REMOVE_GRP,UPDATE_GRP
+            }
+
+            message HotPointStat
+            {
+                enum HotPointStatType
+                {
+                    CREATE = 0;
+                    REMOVE = 1;
+                    RESET = 2;
+                    RESET_SCREEN = 3;
+                }
+
+                required HotPointStatType type = 1;
+                optional ElementDat.HotPoint hotPoint = 2;
+
+            }
+            message LayoutStat
+            {
+                enum LayoutStatType
+                {
+                    ADD = 0;
+                    REMOVE = 1;
+                    USE = 2;//
+                }
+                required LayoutStatType type = 1;
+                repeated ElementDat.ServerLayout servLayout = 2;
+                optional string currentLayout = 3;
+                optional ElementDat.ServerLayout dy = 4; //the one verify
+            }
+            message LayoutLoopStat
+            {
+                enum LayoutLoopStatType
+                {
+                    ADD = 0;
+                    REMOVE = 1;
+                    ADD_LAYOUT = 2;
+                    USE = 3;
+                    SET_LOOP = 4;
+                    STOP = 5;
+                }
+                required LayoutLoopStatType type = 1;
+                repeated ElementDat.ServerLayoutLoop servLayoutLoop = 2;
+                optional string currentLayoutLoop = 4;
+                optional uint32 loop = 5;
+                optional ElementDat.ServerLayoutLoop dy = 6;
+            }
+            message MapGrpStat
+            {
+                enum MapGrpStatType
+                {
+                    RESET = 0;
+                }
+                required MapGrpStatType type = 1;
+                repeated ElementDat.Map mapGrp = 2;
+            }
+
+            message ErrorStat
+            {
+                required string error = 1;
+            }
+
+            message KeyboardSelectedStat
+            {
+                required int32  screenId = 1;
+                required Guid cameraId = 2;
+                required int32 cellid = 3;
+            }
+            message AlarmStat
+            {
+                required string alarmSource = 1;
+                required bool alarmClear  = 2;
+            }
+            message GroupLoopStat
+            {
+                enum GroupLoopStatType
+                {
+                    ALL = 0x0;
+                    FOCUS_AREA = 0x01;
+                    RESET_VIEWS = 0x02;
+                    LOOP_TIME = 0x04;
+                    ACTIVED = 0x08;
+                }
+                required GroupLoopStatType type = 1;
+                required ElementDat.GroupLoop groupLoop = 2;
+            }
+
+            optional ViewStat viewStat = 1;
+            optional CameraStat cameraStat = 2;
+            optional HotPointStat hotPointStat = 3;
+            optional LayoutStat lyoutStat = 4;
+            optional ScreenSpliStat screenStat = 5;
+            optional MapGrpStat mapGrpStat = 6;
+            optional LayoutLoopStat lyoutLoopStat = 7;
+            optional ErrorStat  errStat = 8;
+            optional KeyboardSelectedStat keyboardSelectedStat = 9;
+            optional AlarmStat alarmStat = 10;
+            optional GroupLoopStat groupLoopStat = 11;
+        }
+
+        repeated ElementDat.Screen screenInfo = 1;      //when screen add  a new one or remove one,,
+        optional Stat statInfo = 2;                     //when client send ViewCtrl,,server auto notice back the changed,,
+
+        repeated ElementDat.CameraGrp cameraGrpInfo = 3; //when the server add camera or remove camera
+
+        message NoticeMaster
+        {
+            message NoticeMasterLyout // when the MasterLyout has changed,,
+            {
+                required ElementMaster.MasterLayout masterLayout = 1;
+            }
+            required NoticeMasterLyout nmlyout = 1;
+        }
+        optional NoticeMaster masterStat = 4;
+    }
+
+    optional Session session = 2;
+    optional Ctrl ctrl = 3;
+    optional RequireSession requireSession = 4;
+    optional Notice notice = 5;
+}
+
